@@ -21,7 +21,6 @@ public class HttpClientCLI {
             System.out.println("Enter URL:");
             String url = scanner.nextLine();
 
-            // Example: Let’s ask for one custom header
             System.out.println("Any custom header? (format: Key=Value) or blank to skip:");
             String headerInput = scanner.nextLine();
             Map<String, String> headers = new HashMap<>();

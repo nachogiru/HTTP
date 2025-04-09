@@ -25,24 +25,24 @@ public class SimpleHttpClient {
     public HttpResponse request(String method, String url,
                                 Map<String, String> headers,
                                 String body) throws IOException {
-        // 1. Parse URL (scheme, host, port, path)
+        // Parse URL (scheme, host, port, path)
         ParsedUrl parsedUrl = parseUrl(url);
 
-        // 2. Open a socket to host:port
+        // Open a socket to host:port
         Socket socket = new Socket(parsedUrl.getHost(), parsedUrl.getPort());
         // Create the output and input streams once (do not close them separately)
         PrintWriter out = new PrintWriter(socket.getOutputStream(), false);
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         try {
-            // 3. Build the HTTP request string
+            // Build the HTTP request string
             String requestString = buildRequestString(method, parsedUrl, headers, body);
 
-            // 4. Send the request (write and flush without closing the stream)
+            // Send the request (write and flush without closing the stream)
             out.print(requestString);
             out.flush();
 
-            // 5. Read and parse the response from the already open reader
+            // Read and parse the response from the already open reader
             return readResponse(reader);
         } finally {
             // Close resources in the reverse order of creation
@@ -128,7 +128,7 @@ public class SimpleHttpClient {
         HttpResponse httpResponse = new HttpResponse();
         httpResponse.setHeaders(new HashMap<>());
 
-        // 1) Read the status line, e.g. "HTTP/1.1 200 OK"
+        // Read the status line, e.g. "HTTP/1.1 200 OK"
         String statusLine = reader.readLine();
         if (statusLine == null || !statusLine.startsWith("HTTP/")) {
             throw new IOException("Invalid response status line: " + statusLine);
@@ -137,7 +137,7 @@ public class SimpleHttpClient {
         httpResponse.setStatusCode(Integer.parseInt(parts[1]));
         httpResponse.setStatusMessage(parts.length > 2 ? parts[2] : "");
 
-        // 2) Read headers until a blank line is encountered
+        // Read headers until a blank line is encountered
         String headerLine;
         int contentLength = 0;
         while ((headerLine = reader.readLine()) != null && !headerLine.isEmpty()) {
@@ -152,7 +152,7 @@ public class SimpleHttpClient {
             }
         }
 
-        // 3) Read the body if a Content-Length is provided
+        // Read the body if a Content-Length is provided
         if (contentLength > 0) {
             char[] bodyChars = new char[contentLength];
             int read = reader.read(bodyChars, 0, contentLength);
