@@ -6,6 +6,7 @@ import java.net.URISyntaxException;
 public class ParsedUrl {
     private String scheme, host, path;
     private int port;
+
     public static ParsedUrl parse(String url) {
         try {
             URI u = new URI(url);
@@ -17,8 +18,13 @@ public class ParsedUrl {
             return p;
         } catch (URISyntaxException e) { throw new IllegalArgumentException(e); }
     }
-    public String scheme(){return scheme;}
-    public String host(){return host;}
-    public String path(){return path;}
-    public int port(){return port;}
+    public String host(){
+        return host;
+    }
+    public String path(){
+        return path;
+    }
+    public int port(){
+        return port;
+    }
 }

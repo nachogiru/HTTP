@@ -8,12 +8,26 @@ public class HttpResponse {
     private String statusMessage;
     private Map<String,String> headers = new HashMap<>();
     private String body;
-    public int getStatusCode(){return statusCode;}
-    public void setStatusCode(int c){statusCode=c;}
-    public String getStatusMessage(){return statusMessage;}
-    public void setStatusMessage(String m){statusMessage=m;}
-    public Map<String,String> getHeaders(){return headers;}
-    public void setHeaders(Map<String,String> h){headers=h;}
-    public String getBody(){return body;}
-    public void setBody(String b){body=b;}
+
+    public int getStatusCode() {
+        return statusCode;
+    }
+    public void setStatusCode(int c){
+        statusCode=c;
+    }
+    public String getStatusMessage(){
+        return statusMessage;
+    }
+    public void setStatusMessage(String m){
+        statusMessage=m;
+    }
+    public Map<String,String> getHeaders(){
+        return headers;
+    }
+    public String getBody(){
+        return body;
+    }
+    public void setBody(String b){
+        body=b;
+    }
 }

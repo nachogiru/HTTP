@@ -12,11 +12,19 @@ public class SimpleHttpResponseWriter implements HttpResponseWriter {
     private final Map<String, String> headers = new HashMap<>();
     private final StringBuilder body = new StringBuilder();
 
-    public SimpleHttpResponseWriter(PrintWriter out) { this.out = out; }
+    public SimpleHttpResponseWriter(PrintWriter out) {
+        this.out = out;
+    }
 
-    @Override public void setStatus(int c, String m) { statusCode = c; statusMessage = m; }
-    @Override public void setHeader(String n, String v) { headers.put(n, v); }
-    @Override public void writeBody(String data) { body.append(data); }
+    @Override public void setStatus(int c, String m) {
+        statusCode = c; statusMessage = m;
+        }
+    @Override public void setHeader(String n, String v) {
+        headers.put(n, v);
+    }
+    @Override public void writeBody(String data) {
+        body.append(data);
+    }
 
     @Override public void send() {
         String b = body.toString();
