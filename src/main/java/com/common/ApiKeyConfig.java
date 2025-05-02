@@ -12,8 +12,6 @@ public final class ApiKeyConfig {
 
     private static final String PROP_FILE = "api.properties";
 
-
-
     public static String load(String[] argv, int argIndex) {
         if (argv.length > argIndex) return argv[argIndex];
         String env = System.getenv("API_KEY");

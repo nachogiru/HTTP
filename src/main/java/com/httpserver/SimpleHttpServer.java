@@ -27,9 +27,11 @@ public class SimpleHttpServer {
     public void start() throws IOException {
         try (ServerSocket ss = new ServerSocket(port)) {
             System.out.println("Server listening on " + port);
+            Logger.log(Logger.Level.INFO, "Server started on port " + port);
             while (true) {
                 Socket s = ss.accept();
                 new Thread(() -> handleClient(s)).start();
+                Logger.log(Logger.Level.INFO, "Accepted connection from " + ss.getInetAddress());
             }
         }
     }
@@ -39,12 +41,12 @@ public class SimpleHttpServer {
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            HttpRequest req = parseRequest(in);
-            if (req == null) return;             // bad HTTP, just drop
+            HttpRequest request = parseRequest(in);
+            if (request == null) return;             // bad HTTP, just drop
 
             /* ----------  API-KEY CHECK  ---------- */
             if (expectedApiKey != null) {
-                String provided = req.getHeaders().getOrDefault("X-API-Key", "");
+                String provided = request.getHeaders().getOrDefault("X-API-Key", "");
                 if (!expectedApiKey.equals(provided)) {
                     out.print("HTTP/1.1 401 Unauthorized\r\n");
                     out.print("WWW-Authenticate: ApiKey realm=\"SimpleServer\"\r\n");
@@ -55,16 +57,17 @@ public class SimpleHttpServer {
             }
             /* ------------------------------------- */
 
-            String key = req.getMethod().toUpperCase() + " " + req.getPath();
+            String key = request.getMethod().toUpperCase() + " " + request.getPath();
             RequestHandler h = routes.get(key);
             SimpleHttpResponseWriter resp = new SimpleHttpResponseWriter(out);
-            if (h != null) h.handle(req, resp);
+            if (h != null) h.handle(request, resp);
             else {
                 resp.setStatus(404, "Not Found");
                 resp.setHeader("Content-Type", "text/plain");
                 resp.writeBody("404 Not Found");
             }
             resp.send();
+            Logger.log(Logger.Level.DEBUG, "Received request: " + request.getMethod() + " " + request.getPath());
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -92,7 +95,7 @@ public class SimpleHttpServer {
                 Integer.parseInt(headers.getOrDefault("Content-Length","0"));
         if (len>0) {
             char[] buf = new char[len];
-            in.read(buf);
+            int read = in.read(buf);
             r.setBody(new String(buf));
         }
         return r;

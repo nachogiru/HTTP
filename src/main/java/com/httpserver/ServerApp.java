@@ -16,7 +16,6 @@ public class ServerApp {
     public static void main(String[] args) {
         int port = args.length>0?Integer.parseInt(args[0]):8080;
         String apiKey = ApiKeyConfig.load(args, 1);
-        System.out.println("Esta es la apikey:" + apiKey);
         SimpleHttpServer srv = new SimpleHttpServer(port, apiKey);
 
         /* ---- static file ---- */
@@ -64,26 +63,39 @@ public class ServerApp {
         srv.on("PUT","/resources/",ServerApp::update);
         srv.on("DELETE","/resources/",ServerApp::delete);
 
-        try { srv.start(); } catch (IOException e){ e.printStackTrace(); }
+        try { srv.start(); } catch (IOException e){
+            e.printStackTrace();
+        }
     }
 
     /* ---------- helpers ---------- */
     private static void bad(HttpResponseWriter r,String m){
-        r.setStatus(400,"Bad Request"); r.setHeader("Content-Type","text/plain"); r.writeBody(m);
+        r.setStatus(400,"Bad Request");
+        r.setHeader("Content-Type","text/plain");
+        r.writeBody(m);
     }
     private static boolean isJson(HttpRequest r){
         String ct= r.getHeaders().getOrDefault("Content-Type","").toLowerCase();
         return ct.contains("application/json");
     }
     private static int parseId(String path){
-        try { return Integer.parseInt(path.replaceFirst("^/resources/","")); }
-        catch (Exception e){ return -1; }
+        try {
+            return Integer.parseInt(path.replaceFirst("^/resources/",""));
+        }
+        catch (Exception e){
+            return -1;
+        }
     }
     private static void update(HttpRequest rq,HttpResponseWriter rs){
         int id=parseId(rq.getPath());
         if (id<=0){ bad(rs,"Invalid ID"); return;}
-        if (!store.containsKey(id)){ rs.setStatus(404,"Not Found"); rs.writeBody("Not found"); return;}
-        if (!isJson(rq)){ bad(rs,"Expected JSON"); return;}
+        if (!store.containsKey(id)){
+            rs.setStatus(404,"Not Found");
+            rs.writeBody("Not found"); return;
+        }
+        if (!isJson(rq)){
+            bad(rs,"Expected JSON"); return;
+        }
         Map<String,Object> data=parseJson(rq.getBody());
         if (data==null){ bad(rs,"Invalid JSON"); return;}
         store.put(id,data);
