@@ -1,52 +1,24 @@
 package main.java.com.httpclient;
 
+import java.net.URI;
+import java.net.URISyntaxException;
+
 public class ParsedUrl {
-    private String scheme;  // e.g. "http"
-    private String host;    // e.g. "example.com"
-    private int port;       // e.g. 80
-    private String path;    // e.g. "/cats"
-
-    // Constructors
-    public ParsedUrl() {
+    private String scheme, host, path;
+    private int port;
+    public static ParsedUrl parse(String url) {
+        try {
+            URI u = new URI(url);
+            ParsedUrl p = new ParsedUrl();
+            p.scheme = u.getScheme()==null?"http":u.getScheme();
+            p.host = u.getHost();
+            p.port = (u.getPort()==-1) ? 80 : u.getPort();
+            p.path = (u.getPath()==null||u.getPath().isEmpty())?"/":u.getPath();
+            return p;
+        } catch (URISyntaxException e) { throw new IllegalArgumentException(e); }
     }
-
-    public ParsedUrl(String scheme, String host, int port, String path) {
-        this.scheme = scheme;
-        this.host = host;
-        this.port = port;
-        this.path = path;
-    }
-
-    // Getters and setters
-    public String getScheme() {
-        return scheme;
-    }
-
-    public void setScheme(String scheme) {
-        this.scheme = scheme;
-    }
-
-    public String getHost() {
-        return host;
-    }
-
-    public void setHost(String host) {
-        this.host = host;
-    }
-
-    public int getPort() {
-        return port;
-    }
-
-    public void setPort(int port) {
-        this.port = port;
-    }
-
-    public String getPath() {
-        return path == null || path.isEmpty() ? "/" : path;
-    }
-
-    public void setPath(String path) {
-        this.path = path;
-    }
+    public String scheme(){return scheme;}
+    public String host(){return host;}
+    public String path(){return path;}
+    public int port(){return port;}
 }

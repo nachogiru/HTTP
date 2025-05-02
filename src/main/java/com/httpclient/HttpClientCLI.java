@@ -1,59 +1,42 @@
 package main.java.com.httpclient;
 
-import java.io.IOException;
+import main.java.com.common.ApiKeyConfig;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
 public class HttpClientCLI {
-
-    public static void main(String[] args) {
-        SimpleHttpClient client = new SimpleHttpClient();
-        Scanner scanner = new Scanner(System.in);
+    public static void main(String[] argv) {
+        String apiKey = ApiKeyConfig.load(argv, 0);
+        SimpleHttpClient client = new SimpleHttpClient(apiKey);
+        Scanner sc = new Scanner(System.in);
 
         while (true) {
-            System.out.println("Enter HTTP method (GET, POST, PUT, DELETE) or 'quit' to exit:");
-            String method = scanner.nextLine();
-            if (method.equalsIgnoreCase("quit")) {
-                break;
+            System.out.print("HTTP method or 'quit': ");
+            String m = sc.nextLine();
+            if ("quit".equalsIgnoreCase(m)) break;
+
+            System.out.print("URL: ");
+            String url = sc.nextLine();
+
+            System.out.print("Extra header (Key:Value) blank=none: ");
+            String hline = sc.nextLine();
+            Map<String,String> hdrs = new HashMap<>();
+            if (!hline.isBlank()) {
+                String[] kv = hline.split(":",2);
+                hdrs.put(kv[0].trim(), kv[1].trim());
             }
 
-            System.out.println("Enter URL:");
-            String url = scanner.nextLine();
-
-            System.out.println("Any custom header? (format: Key=Value) or blank to skip:");
-            String headerInput = scanner.nextLine();
-            Map<String, String> headers = new HashMap<>();
-            if (!headerInput.isEmpty()) {
-                String[] kv = headerInput.split("=", 2);
-                if (kv.length == 2) {
-                    headers.put(kv[0].trim(), kv[1].trim());
-                }
-            }
-
-            System.out.println("Enter request body (or leave empty if none):");
-            String body = scanner.nextLine();
-
+            System.out.print("Body (blank=none): ");
+            String body = sc.nextLine();
             try {
-                HttpResponse response = client.request(method, url, headers, body);
-                printResponse(response);
-            } catch (IOException e) {
-                System.err.println("Error performing request: " + e.getMessage());
-            }
+                HttpResponse r = client.request(m, url, hdrs, body.isBlank()?null:body);
+                System.out.println("Status: "+r.getStatusCode()+" "+r.getStatusMessage());
+                r.getHeaders().forEach((k,v)-> System.out.println(k+": "+v));
+                System.out.println();
+                System.out.println(r.getBody());
+            } catch (Exception e) { e.printStackTrace(); }
         }
-
-        scanner.close();
-    }
-
-    private static void printResponse(HttpResponse response) {
-        System.out.println("\n--- HTTP Response ---");
-        System.out.println("Status: " + response.getStatusCode() + " " + response.getStatusMessage());
-        System.out.println("Headers:");
-        for (Map.Entry<String, String> h : response.getHeaders().entrySet()) {
-            System.out.println("  " + h.getKey() + ": " + h.getValue());
-        }
-        System.out.println("Body:");
-        System.out.println(response.getBody());
-        System.out.println("---------------------\n");
     }
 }

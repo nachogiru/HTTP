@@ -1,273 +1,125 @@
 package main.java.com.httpserver;
 
+import main.java.com.common.ApiKeyConfig;
+
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * Demonstrates a SimpleHttpServer with:
- * 1) Static file return
- * 2) CRUD endpoints for an in-memory resource
- * 3) Concurrency (threads)
- * 4) Configurable port
- */
 public class ServerApp {
 
-    // In-memory data store for our "resources".
-    // Each resource is stored as a Map<String, Object> with an auto-generated ID.
-    private static Map<Integer, Map<String, Object>> resources = new HashMap<>();
-    private static AtomicInteger idGenerator = new AtomicInteger(1);
+    private static final Map<Integer,Map<String,Object>> store = new HashMap<>();
+    private static final AtomicInteger ids = new AtomicInteger(1);
 
     public static void main(String[] args) {
-        // Get port from program arguments or default to 8080.
-        int port = 8080;
-        if (args.length > 0) {
-            try {
-                port = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid port, falling back to 8080");
-            }
-        }
+        int port = args.length>0?Integer.parseInt(args[0]):8080;
+        String apiKey = ApiKeyConfig.load(args, 1);
+        System.out.println("Esta es la apikey:" + apiKey);
+        SimpleHttpServer srv = new SimpleHttpServer(port, apiKey);
 
-        // Create a new instance of our SimpleHttpServer.
-        SimpleHttpServer server = new SimpleHttpServer(port);
-
-        // 1) Return static content (HTML)
-        // GET /static => returns the contents of "index.html" from the current working directory.
-        server.on("GET", "/static", (request, response) -> {
+        /* ---- static file ---- */
+        srv.on("GET","/static",(req,res)->{
             try {
-                byte[] fileBytes = Files.readAllBytes(Paths.get("index.html"));
-                response.setStatus(200, "OK");
-                response.setHeader("Content-Type", "text/html");
-                response.writeBody(new String(fileBytes));
-            } catch (IOException e) {
-                response.setStatus(404, "Not Found");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Could not find the static file.\n");
+                byte[] b = Files.readAllBytes(Paths.get("index.html"));
+                res.setStatus(200,"OK");
+                res.setHeader("Content-Type","text/html");
+                res.writeBody(new String(b));
+            } catch (IOException e){
+                res.setStatus(404,"Not Found");
+                res.setHeader("Content-Type","text/plain");
+                res.writeBody("Could not find the static file");
             }
         });
 
-        // 2) Add a new resource (POST /resources)
-        server.on("POST", "/resources", (request, response) -> {
-            if (!hasJsonContentType(request)) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Expected Content-Type: application/json\n");
-                return;
-            }
-
-            String body = request.getBody();
-            if (body == null || body.isEmpty()) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Request body is empty.\n");
-                return;
-            }
-
-            Map<String, Object> data = parseSimpleJson(body);
-            if (data == null) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Invalid JSON.\n");
-                return;
-            }
-
-            int newId = idGenerator.getAndIncrement();
-            resources.put(newId, data);
-
-            response.setStatus(201, "Created");
-            response.setHeader("Content-Type", "application/json");
-            response.writeBody("{\"id\": " + newId + ", \"status\": \"created\"}");
+        /* ---- create ---- */
+        srv.on("POST","/resources",(req,res)->{
+            if (!isJson(req)){bad(res,"Expected JSON"); return;}
+            Map<String,Object> data = parseJson(req.getBody());
+            if (data==null){bad(res,"Invalid JSON"); return;}
+            int id = ids.getAndIncrement();
+            store.put(id,data);
+            res.setStatus(201,"Created");
+            res.setHeader("Content-Type","application/json");
+            res.writeBody("{\"id\": "+id+"}");
         });
 
-        // 3) View the list of resources (GET /resources)
-        server.on("GET", "/resources", (request, response) -> {
-            StringBuilder sb = new StringBuilder();
-            sb.append("[");
-            boolean first = true;
-            for (Map.Entry<Integer, Map<String, Object>> entry : resources.entrySet()) {
-                if (!first) sb.append(",");
-                sb.append(mapToJson(entry.getKey(), entry.getValue()));
-                first = false;
+        /* ---- list ---- */
+        srv.on("GET","/resources",(rq,rs)->{
+            StringBuilder sb=new StringBuilder("[");
+            boolean first=true;
+            for (var e:store.entrySet()){
+                if(!first) sb.append(",");
+                sb.append(toJson(e.getKey(),e.getValue()));
+                first=false;
             }
             sb.append("]");
-
-            response.setStatus(200, "OK");
-            response.setHeader("Content-Type", "application/json");
-            response.writeBody(sb.toString());
+            rs.setStatus(200,"OK");
+            rs.setHeader("Content-Type","application/json");
+            rs.writeBody(sb.toString());
         });
 
-        // 4) Modify a resource (PUT /resources/{id})
-        // Register a dynamic route using a trailing slash to catch IDs, e.g. /resources/123
-        server.on("PUT", "/resources/", (request, response) -> {
-            String fullPath = request.getPath();
-            // Remove the prefix "/resources/" to extract the resource ID.
-            String tail = fullPath.replaceFirst("^/resources/", "");
-            if (tail.isEmpty()) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Missing resource ID in path.\n");
-                return;
+        /* ---- update & delete (dynamic) ---- */
+        srv.on("PUT","/resources/",ServerApp::update);
+        srv.on("DELETE","/resources/",ServerApp::delete);
+
+        try { srv.start(); } catch (IOException e){ e.printStackTrace(); }
+    }
+
+    /* ---------- helpers ---------- */
+    private static void bad(HttpResponseWriter r,String m){
+        r.setStatus(400,"Bad Request"); r.setHeader("Content-Type","text/plain"); r.writeBody(m);
+    }
+    private static boolean isJson(HttpRequest r){
+        String ct= r.getHeaders().getOrDefault("Content-Type","").toLowerCase();
+        return ct.contains("application/json");
+    }
+    private static int parseId(String path){
+        try { return Integer.parseInt(path.replaceFirst("^/resources/","")); }
+        catch (Exception e){ return -1; }
+    }
+    private static void update(HttpRequest rq,HttpResponseWriter rs){
+        int id=parseId(rq.getPath());
+        if (id<=0){ bad(rs,"Invalid ID"); return;}
+        if (!store.containsKey(id)){ rs.setStatus(404,"Not Found"); rs.writeBody("Not found"); return;}
+        if (!isJson(rq)){ bad(rs,"Expected JSON"); return;}
+        Map<String,Object> data=parseJson(rq.getBody());
+        if (data==null){ bad(rs,"Invalid JSON"); return;}
+        store.put(id,data);
+        rs.setStatus(200,"OK"); rs.setHeader("Content-Type","application/json");
+        rs.writeBody("{\"status\":\"updated\"}");
+    }
+    private static void delete(HttpRequest rq,HttpResponseWriter rs){
+        int id=parseId(rq.getPath());
+        if (id<=0){ bad(rs,"Invalid ID"); return;}
+        if (store.remove(id)==null){ rs.setStatus(404,"Not Found"); rs.writeBody("Not found"); return;}
+        rs.setStatus(200,"OK"); rs.setHeader("Content-Type","application/json");
+        rs.writeBody("{\"status\":\"deleted\"}");
+    }
+    /* super-naive JSON (key:string or int) */
+    private static Map<String,Object> parseJson(String j){
+        try{
+            Map<String,Object> m=new HashMap<>();
+            String in=j.trim(); if(!in.startsWith("{")||!in.endsWith("}")) return null;
+            in=in.substring(1,in.length()-1).trim();
+            if(in.isEmpty()) return m;
+            for (String p: in.split(",")){
+                String[] kv=p.split(":",2); if(kv.length<2) return null;
+                String k=kv[0].trim().replaceAll("^\"|\"$","");
+                String v=kv[1].trim();
+                if(v.startsWith("\"")&&v.endsWith("\"")) m.put(k, v.substring(1,v.length()-1));
+                else m.put(k,Integer.parseInt(v));
             }
-
-            int resourceId;
-            try {
-                resourceId = Integer.parseInt(tail);
-            } catch (NumberFormatException e) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Invalid resource ID.\n");
-                return;
-            }
-
-            if (!resources.containsKey(resourceId)) {
-                response.setStatus(404, "Not Found");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Resource not found.\n");
-                return;
-            }
-
-            if (!hasJsonContentType(request)) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Expected Content-Type: application/json\n");
-                return;
-            }
-
-            String body = request.getBody();
-            if (body == null || body.isEmpty()) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Request body is empty.\n");
-                return;
-            }
-
-            Map<String, Object> updatedData = parseSimpleJson(body);
-            if (updatedData == null) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Invalid JSON.\n");
-                return;
-            }
-
-            // Update the resource in the in-memory store.
-            resources.put(resourceId, updatedData);
-
-            response.setStatus(200, "OK");
-            response.setHeader("Content-Type", "application/json");
-            response.writeBody("{\"id\": " + resourceId + ", \"status\": \"updated\"}");
+            return m;
+        }catch(Exception e){ return null;}
+    }
+    private static String toJson(int id,Map<String,Object> d){
+        StringBuilder sb=new StringBuilder("{\"id\":").append(id);
+        d.forEach((k,v)->{
+            sb.append(",\"").append(k).append("\":");
+            sb.append((v instanceof Number)?v:("\""+v+"\""));
         });
-
-        // 5) Delete a resource (DELETE /resources/{id})
-        server.on("DELETE", "/resources/", (request, response) -> {
-            String fullPath = request.getPath();
-            String tail = fullPath.replaceFirst("^/resources/", "");
-            if (tail.isEmpty()) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Missing resource ID in path.\n");
-                return;
-            }
-
-            int resourceId;
-            try {
-                resourceId = Integer.parseInt(tail);
-            } catch (NumberFormatException e) {
-                response.setStatus(400, "Bad Request");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Invalid resource ID.\n");
-                return;
-            }
-
-            if (!resources.containsKey(resourceId)) {
-                response.setStatus(404, "Not Found");
-                response.setHeader("Content-Type", "text/plain");
-                response.writeBody("Resource not found.\n");
-                return;
-            }
-
-            resources.remove(resourceId);
-            response.setStatus(200, "OK");
-            response.setHeader("Content-Type", "application/json");
-            response.writeBody("{\"status\": \"deleted\"}");
-        });
-
-        // Start the server.
-        try {
-            server.start();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    /**
-     * Minimal check: Does the "Content-Type" header contain "application/json"?
-     */
-    private static boolean hasJsonContentType(HttpRequest request) {
-        String ct = request.getHeaders().get("Content-Type");
-        if (ct == null) return false;
-        // Check substring in case of additional parameters (e.g., charset)
-        return ct.toLowerCase().contains("application/json");
-    }
-
-    /**
-     * A basic JSON parser for demonstration purposes.
-     * This naive implementation expects a flat JSON object like:
-     * {"key":"value", "num":123}
-     * For real projects, use a robust JSON library such as Jackson or Gson.
-     */
-    private static Map<String, Object> parseSimpleJson(String json) {
-        Map<String, Object> map = new HashMap<>();
-        json = json.trim();
-        if (!json.startsWith("{") || !json.endsWith("}")) {
-            return null;
-        }
-        // Remove the outer braces.
-        String inner = json.substring(1, json.length() - 1).trim();
-        if (inner.isEmpty()) {
-            return map; // Empty JSON object.
-        }
-        // Naively split key-value pairs.
-        String[] pairs = inner.split(",");
-        for (String pair : pairs) {
-            String[] kv = pair.split(":", 2);
-            if (kv.length < 2) return null;
-            String k = kv[0].trim().replaceAll("^\"|\"$", "");
-            String v = kv[1].trim();
-            if (v.startsWith("\"") && v.endsWith("\"")) {
-                v = v.substring(1, v.length() - 1);
-                map.put(k, v);
-            } else {
-                try {
-                    Integer intVal = Integer.valueOf(v);
-                    map.put(k, intVal);
-                } catch (NumberFormatException e) {
-                    map.put(k, v);
-                }
-            }
-        }
-        return map;
-    }
-
-    /**
-     * Convert a resource entry (ID and data) to a JSON object string.
-     */
-    private static String mapToJson(Integer id, Map<String, Object> data) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("{");
-        sb.append("\"id\": ").append(id);
-        for (Map.Entry<String, Object> e : data.entrySet()) {
-            sb.append(", \"")
-                    .append(e.getKey())
-                    .append("\": ");
-            if (e.getValue() instanceof Number) {
-                sb.append(e.getValue());
-            } else {
-                sb.append("\"").append(e.getValue()).append("\"");
-            }
-        }
         sb.append("}");
         return sb.toString();
     }

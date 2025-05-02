@@ -9,113 +9,92 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * A simple HTTP server that lets you register routes and dispatch requests.
- */
 public class SimpleHttpServer {
 
-    private int port;
-    // Map with keys as "METHOD path" (e.g., "GET /cats") and values as handlers.
-    private Map<String, RequestHandler> routes = new HashMap<>();
+    private final int port;
+    private final String expectedApiKey;                     // null ⇒ auth off
+    private final Map<String, RequestHandler> routes = new HashMap<>();
 
-    public SimpleHttpServer(int port) {
+    public SimpleHttpServer(int port, String expectedApiKey) {
         this.port = port;
+        this.expectedApiKey = expectedApiKey;
     }
 
-    /**
-     * Register an endpoint with a given HTTP method and path.
-     *
-     * @param method  HTTP method (GET, POST, etc.)
-     * @param path    URL path (e.g., "/cats")
-     * @param handler The request handler for this endpoint
-     */
     public void on(String method, String path, RequestHandler handler) {
-        String key = method.toUpperCase() + " " + path;
-        routes.put(key, handler);
+        routes.put(method.toUpperCase() + " " + path, handler);
     }
 
-    /**
-     * Start the HTTP server. This method will block.
-     *
-     * @throws IOException if an I/O error occurs when waiting for a connection.
-     */
     public void start() throws IOException {
-        ServerSocket serverSocket = new ServerSocket(port);
-        System.out.println("Server listening on port " + port);
-        while (true) {
-            Socket clientSocket = serverSocket.accept();
-            // Handle each connection in a new thread (for concurrency)
-            new Thread(() -> handleClient(clientSocket)).start();
+        try (ServerSocket ss = new ServerSocket(port)) {
+            System.out.println("Server listening on " + port);
+            while (true) {
+                Socket s = ss.accept();
+                new Thread(() -> handleClient(s)).start();
+            }
         }
     }
 
-    /**
-     * Handles a single client connection.
-     */
-    private void handleClient(Socket clientSocket) {
-        try (Socket socket = clientSocket;
+    private void handleClient(Socket socket) {
+        try (socket;
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
-            // Parse the request from the client
-            HttpRequest request = parseRequest(in);
-            // Create a response writer
-            SimpleHttpResponseWriter responseWriter = new SimpleHttpResponseWriter(out);
-            // Dispatch the request to a handler based on method and path
-            String key = request.getMethod().toUpperCase() + " " + request.getPath();
-            RequestHandler handler = routes.get(key);
-            if (handler != null) {
-                handler.handle(request, responseWriter);
-            } else {
-                // No matching route; return 404 Not Found.
-                responseWriter.setStatus(404, "Not Found");
-                responseWriter.setHeader("Content-Type", "text/plain");
-                responseWriter.writeBody("404 Not Found");
+            HttpRequest req = parseRequest(in);
+            if (req == null) return;             // bad HTTP, just drop
+
+            /* ----------  API-KEY CHECK  ---------- */
+            if (expectedApiKey != null) {
+                String provided = req.getHeaders().getOrDefault("X-API-Key", "");
+                if (!expectedApiKey.equals(provided)) {
+                    out.print("HTTP/1.1 401 Unauthorized\r\n");
+                    out.print("WWW-Authenticate: ApiKey realm=\"SimpleServer\"\r\n");
+                    out.print("Content-Length: 0\r\n\r\n");
+                    out.flush();
+                    return;
+                }
             }
-            // Send the response
-            responseWriter.send();
-        } catch (IOException e) {
+            /* ------------------------------------- */
+
+            String key = req.getMethod().toUpperCase() + " " + req.getPath();
+            RequestHandler h = routes.get(key);
+            SimpleHttpResponseWriter resp = new SimpleHttpResponseWriter(out);
+            if (h != null) h.handle(req, resp);
+            else {
+                resp.setStatus(404, "Not Found");
+                resp.setHeader("Content-Type", "text/plain");
+                resp.writeBody("404 Not Found");
+            }
+            resp.send();
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    /**
-     * A simple parser for an HTTP request.
-     */
     private HttpRequest parseRequest(BufferedReader in) throws IOException {
-        HttpRequest request = new HttpRequest();
-        // Read request line (e.g., "GET /cats HTTP/1.1")
-        String requestLine = in.readLine();
-        if (requestLine == null || requestLine.isEmpty()) {
-            throw new IOException("Empty request line");
-        }
-        String[] parts = requestLine.split(" ");
-        if (parts.length < 3) {
-            throw new IOException("Invalid request line: " + requestLine);
-        }
-        request.setMethod(parts[0]);
-        request.setPath(parts[1]);
+        String line = in.readLine();
+        if (line == null || line.isEmpty()) return null;
+        String[] p = line.split(" ");
+        if (p.length < 3) return null;
 
-        // Read headers until an empty line is encountered.
-        Map<String, String> headers = new HashMap<>();
-        String headerLine;
-        while ((headerLine = in.readLine()) != null && !headerLine.isEmpty()) {
-            int colonIndex = headerLine.indexOf(":");
-            if (colonIndex != -1) {
-                String name = headerLine.substring(0, colonIndex).trim();
-                String value = headerLine.substring(colonIndex + 1).trim();
-                headers.put(name, value);
-            }
-        }
-        request.setHeaders(headers);
+        HttpRequest r = new HttpRequest();
+        r.setMethod(p[0]);
+        r.setPath(p[1]);
 
-        // If Content-Length is specified, read that many characters for the body.
-        if (headers.containsKey("Content-Length")) {
-            int contentLength = Integer.parseInt(headers.get("Content-Length"));
-            char[] bodyChars = new char[contentLength];
-            int read = in.read(bodyChars, 0, contentLength);
-            request.setBody(new String(bodyChars, 0, read));
+        Map<String,String> headers = new HashMap<>();
+        String h;
+        while ((h = in.readLine()) != null && !h.isEmpty()) {
+            int idx = h.indexOf(':');
+            if (idx>0) headers.put(h.substring(0,idx).trim(), h.substring(idx+1).trim());
         }
-        return request;
+        r.setHeaders(headers);
+
+        int len = headers.getOrDefault("Content-Length", "0").isEmpty() ? 0 :
+                Integer.parseInt(headers.getOrDefault("Content-Length","0"));
+        if (len>0) {
+            char[] buf = new char[len];
+            in.read(buf);
+            r.setBody(new String(buf));
+        }
+        return r;
     }
 }
