@@ -23,7 +23,7 @@ public class SimpleHttpClient {
     }
 
     /* ------------------------------------------------------------------ */
-    /*                       ░░  M A I N   A P I  ░░                       */
+     /*                         M A I N   A P I                          */
     /* ------------------------------------------------------------------ */
 
     // Perform a single HTTP request and return parsed response.
