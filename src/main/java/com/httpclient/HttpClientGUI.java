@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 /*
  * Simple Swing‑based GUI wrapper around SimpleHttpClient.
- * Inline comments only, no Javadoc – per instructions.
  */
 public class HttpClientGUI extends JFrame {
 

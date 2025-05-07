@@ -2,7 +2,7 @@ package main.java.com.httpserver;
 
 import java.util.Map;
 
-// POJO representing an incoming HTTP request (method, path, headers, body).
+// Object representing an incoming HTTP request (method, path, headers, body).
 // Mutability is fine here because the server will populate this object once per request.
 public class HttpRequest {
     private String method;                        // HTTP verb (GET, POST, ...)

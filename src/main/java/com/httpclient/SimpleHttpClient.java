@@ -12,7 +12,6 @@ import java.util.Map;
  *   • arbitrary method, URL, headers, and optional body
  *   • persistent cookie jar (via CookieStore)
  *   • optional X-API-Key header for auth
- * No redirect handling, no TLS, no chunked encoding – intentionally minimal.
  */
 public class SimpleHttpClient {
 

@@ -10,7 +10,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 // Very small blocking HTTP/1.1 server with route table and optional API‑key auth.
-// One thread per connection – suitable for demos, not production.
 public class SimpleHttpServer {
 
     private final int port;                               // TCP port to listen on

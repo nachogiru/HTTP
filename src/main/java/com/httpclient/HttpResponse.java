@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /*
- * Mutable POJO representing an HTTP response – status line, headers, and body.
+ * Mutable object representing an HTTP response – status line, headers, and body.
  * Only inline // comments per user request.
  */
 public class HttpResponse {

@@ -23,7 +23,7 @@ public class CookieStore {
     private final List<Cookie> jar = new ArrayList<>();
 
     public CookieStore() {
-        load(); // load cookies from disk at startup (best‑effort)
+        load(); // load cookies from disk at startup
     }
 
     // Return cookies that match given host and path
@@ -89,7 +89,7 @@ public class CookieStore {
         jar.add(new Cookie(name, value, domain, path, exp)); // add new/updated cookie
     }
 
-    // Persist all cookies to disk (best‑effort)
+    // Persist all cookies to disk
     public void save() {
         try (BufferedWriter w = Files.newBufferedWriter(Paths.get(FILE))) {
             for (Cookie c : jar) {
