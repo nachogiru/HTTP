@@ -50,7 +50,7 @@ public class SimpleHttpServer {
 
             /* ---------- optional API‑KEY check ---------- */
             if (expectedApiKey != null) {
-                System.out.println("X-API-key recibida: " + request.getHeaders().get("X-API-key"));
+                System.out.println("X-API-key received: " + request.getHeaders().get("X-API-key"));
                 String provided = request.getHeaders().entrySet().stream()
                         .filter(e -> e.getKey().equalsIgnoreCase("X-API-key"))
                         .map(Map.Entry::getValue)
