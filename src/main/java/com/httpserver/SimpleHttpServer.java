@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
-// Very small blocking HTTP/1.1 server with route table and optional API‑key auth.
+//  HTTP/1.1 server with route table and optional API‑key auth.
 public class SimpleHttpServer {
 
     private final int port;                               // TCP port to listen on

@@ -136,7 +136,7 @@ public class ServerApp {
         rs.writeBody("{\"status\":\"deleted\"}");
     }
 
-    /* ---------- super‑naïve JSON parsing (numbers or quoted strings) ---- */
+    /* ---------- JSON parsing (numbers or quoted strings) ---- */
     private static Map<String,Object> parseJson(String j) {
         try {
             Map<String,Object> m = new HashMap<>();
