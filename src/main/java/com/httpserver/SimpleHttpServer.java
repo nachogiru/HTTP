@@ -7,9 +7,12 @@ import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
-// HTTP/1.1 server with route table and optional API-key auth.
+// Very small blocking HTTP/1.1 server with route table, optional API-key auth,
+// and proper 405 Method Not Allowed handling. One thread per connection.
 public class SimpleHttpServer {
 
     private final int port;                               // TCP port to listen on
@@ -39,23 +42,25 @@ public class SimpleHttpServer {
         }
     }
 
-    // -------------------------- per-client handling ----------------------
+    // per-client handling: parse, auth, routing, method checks, response
     private void handleClient(Socket socket) {
         try (socket;
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
              PrintWriter out = new PrintWriter(socket.getOutputStream(), true)) {
 
             HttpRequest request = parseRequest(in);
-            if (request == null) return; // malformed → drop silently
+            if (request == null) return; // malformed → drop
 
-            /* ---------- optional API-KEY check ---------- */
+            String method = request.getMethod().toUpperCase();
+            String path   = request.getPath();
+            String incoming = method + " " + path;
+
+            // API key check
             if (expectedApiKey != null) {
                 String provided = request.getHeaders().entrySet().stream()
                         .filter(e -> e.getKey().equalsIgnoreCase("X-API-Key"))
                         .map(Map.Entry::getValue)
-                        .findFirst()
-                        .orElse("");
-
+                        .findFirst().orElse("");
                 if (!expectedApiKey.equals(provided)) {
                     out.print("HTTP/1.1 401 Unauthorized\r\n");
                     out.print("WWW-Authenticate: ApiKey realm=\"SimpleServer\"\r\n");
@@ -64,65 +69,81 @@ public class SimpleHttpServer {
                     return;
                 }
             }
-            /* ------------------------------------------------------------- */
 
-            // dynamic route lookup by longest matching prefix
-            String incoming = request.getMethod().toUpperCase() + " " + request.getPath();
-            RequestHandler h = null;
+            // find matching handler by longest prefix
+            RequestHandler handler = null;
             int bestLen = -1;
-            for (Map.Entry<String,RequestHandler> e : routes.entrySet()) {
-                String routeKey = e.getKey();
-                if (incoming.startsWith(routeKey) && routeKey.length() > bestLen) {
-                    bestLen = routeKey.length();
-                    h = e.getValue();
+            for (var e : routes.entrySet()) {
+                String key = e.getKey();
+                if (incoming.startsWith(key) && key.length() > bestLen) {
+                    bestLen = key.length();
+                    handler = e.getValue();
                 }
             }
 
             SimpleHttpResponseWriter resp = new SimpleHttpResponseWriter(out);
-            if (h != null) {
-                h.handle(request, resp);   // invoke matched handler
+            if (handler != null) {
+                handler.handle(request, resp);
+                resp.send();
             } else {
-                resp.setStatus(404, "Not Found");
-                resp.setHeader("Content-Type", "text/plain");
-                resp.writeBody("404 Not Found");
+                // method not allowed?
+                Set<String> allowed = new HashSet<>();
+                for (String key : routes.keySet()) {
+                    String routePath = key.substring(key.indexOf(' ') + 1);
+                    if (path.startsWith(routePath)) {
+                        allowed.add(key.split(" ")[0]);
+                    }
+                }
+                if (!allowed.isEmpty()) {
+                    // 405 Method Not Allowed
+                    out.print("HTTP/1.1 405 Method Not Allowed\r\n");
+                    out.print("Allow: " + String.join(", ", allowed) + "\r\n");
+                    out.print("Content-Length: 0\r\n\r\n");
+                    out.flush();
+                } else {
+                    // 404 Not Found
+                    resp.setStatus(404, "Not Found");
+                    resp.setHeader("Content-Type", "text/plain");
+                    resp.writeBody("404 Not Found");
+                    resp.send();
+                }
             }
-            resp.send();
-            Logger.log(Logger.Level.DEBUG, "Received request: " + request.getMethod() + " " + request.getPath());
+
+            Logger.log(Logger.Level.DEBUG, "Handled " + method + " " + path);
         } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
-    // -------------------------- HTTP parsing -----------------------------
+    // parse start-line, headers, and optional body into HttpRequest
     private HttpRequest parseRequest(BufferedReader in) throws IOException {
         String line = in.readLine();
         if (line == null || line.isEmpty()) return null;
-
         String[] p = line.split(" ");
-        if (p.length < 3) return null; // need METHOD path HTTP/1.1
+        if (p.length < 3) return null;
 
-        HttpRequest r = new HttpRequest();
-        r.setMethod(p[0]);
-        r.setPath(p[1]);
+        HttpRequest req = new HttpRequest();
+        req.setMethod(p[0]);
+        req.setPath(p[1]);
 
-        // headers
         Map<String,String> headers = new HashMap<>();
-        String h;
-        while ((h = in.readLine()) != null && !h.isEmpty()) {
-            int idx = h.indexOf(':');
-            if (idx > 0)
-                headers.put(h.substring(0, idx).trim(), h.substring(idx + 1).trim());
+        while ((line = in.readLine()) != null && !line.isEmpty()) {
+            int idx = line.indexOf(':');
+            if (idx > 0) {
+                String name = line.substring(0, idx).trim();
+                String val  = line.substring(idx+1).trim();
+                headers.put(name, val);
+            }
         }
-        r.setHeaders(headers);
+        req.setHeaders(headers);
 
-        // body (only if Content-Length set)
         int len = headers.getOrDefault("Content-Length", "0").isEmpty() ? 0 :
                 Integer.parseInt(headers.getOrDefault("Content-Length", "0"));
         if (len > 0) {
             char[] buf = new char[len];
             in.read(buf);
-            r.setBody(new String(buf));
+            req.setBody(new String(buf));
         }
-        return r;
+        return req;
     }
 }
