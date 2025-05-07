@@ -296,3 +296,34 @@
 [2025-05-07 18:27:34] [DEBUG] Handled HEAD /resources
 [2025-05-07 18:27:35] [INFO] Accepted connection from /127.0.0.1
 [2025-05-07 18:27:35] [DEBUG] Handled HEAD /resources
+[2025-05-07 18:37:29] [INFO] Server started on port 8080
+[2025-05-07 18:37:36] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:37:36] [DEBUG] Handled GET /resources
+[2025-05-07 18:37:37] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:37:37] [DEBUG] Handled GET /resources
+[2025-05-07 18:37:37] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:37:37] [DEBUG] Handled GET /resources
+[2025-05-07 18:38:50] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:38:50] [DEBUG] Handled GET /resources
+[2025-05-07 18:38:50] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:38:50] [DEBUG] Handled GET /resources
+[2025-05-07 18:40:28] [INFO] Server started on port 8080
+[2025-05-07 18:40:38] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:40:38] [DEBUG] Handled GET /resources
+[2025-05-07 18:40:43] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:40:43] [DEBUG] Handled GET /resources
+[2025-05-07 18:40:53] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:40:53] [DEBUG] Handled POST /resources
+[2025-05-07 18:40:56] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:40:56] [DEBUG] Handled HEAD /resources
+[2025-05-07 18:41:03] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:41:03] [DEBUG] Handled HEAD /resources/1
+[2025-05-07 18:41:03] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:41:03] [DEBUG] Handled HEAD /resources/1
+[2025-05-07 18:41:03] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:41:03] [DEBUG] Handled HEAD /resources/1
+[2025-05-07 18:52:30] [INFO] Server started on port 8080
+[2025-05-07 18:53:25] [INFO] Accepted connection from /0:0:0:0:0:0:0:1
+[2025-05-07 18:53:25] [DEBUG] Handled GET /static
+[2025-05-07 18:54:00] [INFO] Accepted connection from /0:0:0:0:0:0:0:1
+[2025-05-07 18:54:00] [DEBUG] Handled GET /static
