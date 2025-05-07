@@ -50,7 +50,7 @@ public class ServerApp {
 
         /* -------------------------- create ------------------------------- */
         srv.on("POST", "/resources", (req, res) -> {
-            if (!isJson(req)) { bad(res, "Expected JSON"); return; }
+            if (isJson(req)) { bad(res, "Expected JSON"); return; }
             Map<String,Object> data = parseJson(req.getBody());
             if (data == null) { bad(res, "Invalid JSON"); return; }
 
@@ -100,7 +100,7 @@ public class ServerApp {
     // crude Content-Type check
     private static boolean isJson(HttpRequest r) {
         String ct = r.getHeaders().getOrDefault("Content-Type", "").toLowerCase();
-        return ct.contains("application/json");
+        return !ct.contains("application/json");
     }
 
     // grab numeric id from /resources/{id}
@@ -114,7 +114,7 @@ public class ServerApp {
         int id = parseId(rq.getPath());
         if (id <= 0) { bad(rs, "Invalid ID"); return; }
         if (!store.containsKey(id)) { rs.setStatus(404, "Not Found"); rs.writeBody("Not found"); return; }
-        if (!isJson(rq)) { bad(rs, "Expected JSON"); return; }
+        if (isJson(rq)) { bad(rs, "Expected JSON"); return; }
 
         Map<String,Object> data = parseJson(rq.getBody());
         if (data == null) { bad(rs, "Invalid JSON"); return; }
