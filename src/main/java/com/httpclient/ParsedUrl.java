@@ -4,8 +4,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 /*
- * Tiny helper that parses a URL into scheme, host, port, and path.
- * Defaults: scheme=http, port=80, path="/" when missing.
+ * Helper that parses a URL into scheme, host, port, and path.
  */
 public class ParsedUrl {
     private String scheme, host, path;

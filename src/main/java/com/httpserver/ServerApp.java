@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.Scanner;
 
 /*
- * Demo HTTP server exposing a very small REST-style API backed by an in-memory map.
  * Supports GET, HEAD, POST, PUT, DELETE on /resources and /resources/{id}, plus a static file.
  */
 public class ServerApp {

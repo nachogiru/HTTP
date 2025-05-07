@@ -11,8 +11,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-// Very small blocking HTTP/1.1 server with route table, optional API-key auth,
-// and proper 405 Method Not Allowed handling. One thread per connection.
+
 public class SimpleHttpServer {
 
     private final int port;                               // TCP port to listen on

@@ -8,12 +8,11 @@ import java.net.Socket;
 import java.util.*;
 
 /*
- * Very small blocking HTTP/1.1 client that supports:
+ * HTTP/1.1 client that supports:
  *   • arbitrary method, URL, headers, and optional body
  *   • persistent cookie jar (via CookieStore)
  *   • optional X-API-Key header for auth
  *   • default headers: Host, Accept, User-Agent, Connection: close
- * No redirect handling, no TLS, no chunked encoding – intentionally minimal.
  */
 public class SimpleHttpClient {
 
@@ -32,7 +31,7 @@ public class SimpleHttpClient {
      * @param body   request body (e.g. JSON) or null
      */
     public HttpResponse request(String method, String url,
-                                Map<String,String> extraHeaders,
+                                Map<String, String> extraHeaders,
                                 String body) throws Exception {
 
         ParsedUrl u = ParsedUrl.parse(url); // split URL into host, port, path
@@ -71,7 +70,7 @@ public class SimpleHttpClient {
 
             // User-specified headers (may overwrite any above)
             if (extraHeaders != null) {
-                for (Map.Entry<String,String> e : extraHeaders.entrySet()) {
+                for (Map.Entry<String, String> e : extraHeaders.entrySet()) {
                     sb.append(e.getKey()).append(": ").append(e.getValue()).append("\r\n");
                 }
             }

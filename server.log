@@ -257,3 +257,42 @@
 [2025-05-07 17:58:49] [INFO] Accepted connection from /127.0.0.1
 [2025-05-07 17:58:49] [DEBUG] Handled GET /resources/2
 [2025-05-07 18:01:48] [INFO] Server started on port 8080
+[2025-05-07 18:03:21] [INFO] Server started on port 8070
+[2025-05-07 18:03:31] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:03:31] [DEBUG] Handled GET /resources
+[2025-05-07 18:03:35] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:03:35] [DEBUG] Handled GET /static
+[2025-05-07 18:09:13] [INFO] Server started on port 8070
+[2025-05-07 18:09:27] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:09:42] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:09:42] [DEBUG] Handled GET /resources
+[2025-05-07 18:09:55] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:09:55] [DEBUG] Handled HEAD /resources
+[2025-05-07 18:10:02] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:10:02] [DEBUG] Handled GET /static
+[2025-05-07 18:10:40] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:10:40] [DEBUG] Handled POST /resources
+[2025-05-07 18:10:43] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:10:43] [DEBUG] Handled GET /resources
+[2025-05-07 18:16:36] [INFO] Server started on port 8070
+[2025-05-07 18:16:48] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:16:48] [DEBUG] Handled GET /resources
+[2025-05-07 18:26:49] [INFO] Server started on port 8080
+[2025-05-07 18:26:58] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:26:58] [DEBUG] Handled GET /resources
+[2025-05-07 18:26:59] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:26:59] [DEBUG] Handled GET /resources
+[2025-05-07 18:27:03] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:27:03] [DEBUG] Handled HEAD /resources
+[2025-05-07 18:27:04] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:27:04] [DEBUG] Handled HEAD /resources
+[2025-05-07 18:27:04] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:27:04] [DEBUG] Handled HEAD /resources
+[2025-05-07 18:27:14] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:27:14] [DEBUG] Handled HEAD /static
+[2025-05-07 18:27:30] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:27:30] [DEBUG] Handled POST /resources
+[2025-05-07 18:27:34] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:27:34] [DEBUG] Handled HEAD /resources
+[2025-05-07 18:27:35] [INFO] Accepted connection from /127.0.0.1
+[2025-05-07 18:27:35] [DEBUG] Handled HEAD /resources
