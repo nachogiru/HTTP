@@ -8,7 +8,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /*
- * Demo HTTP server exposing a very small RESTish API backed by an in-memory map.
  * Routes:
  *   GET    /static             – serve index.html from working dir
  *   POST   /resources          – create JSON object, returns {"id": n}
