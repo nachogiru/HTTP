@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 
-//  HTTP/1.1 server with route table and optional API‑key auth.
+// HTTP/1.1 server with route table and optional API-key auth.
 public class SimpleHttpServer {
 
     private final int port;                               // TCP port to listen on
@@ -21,7 +21,7 @@ public class SimpleHttpServer {
         this.expectedApiKey = expectedApiKey;
     }
 
-    // register handler for exact METHOD + path (path may end with '/' for prefixes)
+    // register handler for exact METHOD + path prefix
     public void on(String method, String path, RequestHandler handler) {
         routes.put(method.toUpperCase() + " " + path, handler);
     }
@@ -39,7 +39,7 @@ public class SimpleHttpServer {
         }
     }
 
-    // -------------------------- per‑client handling ----------------------
+    // -------------------------- per-client handling ----------------------
     private void handleClient(Socket socket) {
         try (socket;
              BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -48,11 +48,10 @@ public class SimpleHttpServer {
             HttpRequest request = parseRequest(in);
             if (request == null) return; // malformed → drop silently
 
-            /* ---------- optional API‑KEY check ---------- */
+            /* ---------- optional API-KEY check ---------- */
             if (expectedApiKey != null) {
-                System.out.println("X-API-key received: " + request.getHeaders().get("X-API-key"));
                 String provided = request.getHeaders().entrySet().stream()
-                        .filter(e -> e.getKey().equalsIgnoreCase("X-API-key"))
+                        .filter(e -> e.getKey().equalsIgnoreCase("X-API-Key"))
                         .map(Map.Entry::getValue)
                         .findFirst()
                         .orElse("");
@@ -67,12 +66,21 @@ public class SimpleHttpServer {
             }
             /* ------------------------------------------------------------- */
 
-            String key = request.getMethod().toUpperCase() + " " + request.getPath();
-            RequestHandler h = routes.get(key);
-            SimpleHttpResponseWriter resp = new SimpleHttpResponseWriter(out);
+            // dynamic route lookup by longest matching prefix
+            String incoming = request.getMethod().toUpperCase() + " " + request.getPath();
+            RequestHandler h = null;
+            int bestLen = -1;
+            for (Map.Entry<String,RequestHandler> e : routes.entrySet()) {
+                String routeKey = e.getKey();
+                if (incoming.startsWith(routeKey) && routeKey.length() > bestLen) {
+                    bestLen = routeKey.length();
+                    h = e.getValue();
+                }
+            }
 
+            SimpleHttpResponseWriter resp = new SimpleHttpResponseWriter(out);
             if (h != null) {
-                h.handle(request, resp);   // invoke user handler
+                h.handle(request, resp);   // invoke matched handler
             } else {
                 resp.setStatus(404, "Not Found");
                 resp.setHeader("Content-Type", "text/plain");
