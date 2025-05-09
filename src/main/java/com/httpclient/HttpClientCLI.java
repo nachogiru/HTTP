@@ -1,68 +1,77 @@
 package main.java.com.httpclient;
 
 import main.java.com.common.ApiKeyConfig;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
 
 /*
- * Command‑line REPL that lets a user craft raw HTTP requests interactively.
+ * Interactive CLI for sending arbitrary HTTP requests in a single session.
  */
 public class HttpClientCLI {
     public static void main(String[] argv) {
-        // Load API key: from argv[0] if supplied, otherwise fall back to config
+        // load API key from args/env/file
         String apiKey = ApiKeyConfig.load(argv, 0);
 
-        // Creates minimal HTTP client that attaches the key to each request
+        // HTTP client instance (will reuse connection settings)
         SimpleHttpClient client = new SimpleHttpClient(apiKey);
-
-        // Console reader for user input (blocking)
         Scanner sc = new Scanner(System.in);
 
         while (true) {
-            // Build request – step 1: method (or quit)
+            // get HTTP verb or exit
             System.out.print("HTTP method or 'quit': ");
-            String m = sc.nextLine();
-            if ("quit".equalsIgnoreCase(m)) break;   // exit REPL loop
+            String method = sc.nextLine().trim();
+            if ("quit".equalsIgnoreCase(method)) break;
 
-            // step 2: full URL
+            // get target URL
             System.out.print("URL: ");
-            String url = sc.nextLine();
+            String url = sc.nextLine().trim();
 
-            // step 3: optional single header in Key:Value form
-            System.out.print("Extra header (Key:Value) blank=none: ");
-            String hline = sc.nextLine();
-            Map<String,String> hdrs = new HashMap<>();
-            if (!hline.isBlank()) {
-                String[] kv = hline.split(":", 2);  // only first ':' splits
-                hdrs.put(kv[0].trim(), kv[1].trim()); // trim spaces around key/value
+            // read arbitrary headers from user
+            System.out.println("Enter headers (Key:Value), blank line to finish:");
+            Map<String, String> headers = new HashMap<>();
+            while (true) {
+                String line = sc.nextLine().trim();
+                if (line.isBlank()) break;
+                String[] kv = line.split(":", 2);
+                if (kv.length == 2) {
+                    headers.put(kv[0].trim(), kv[1].trim());
+                } else {
+                    System.out.println("Invalid header format, expected Key:Value");
+                }
             }
 
-            // step 4: optional body
-            System.out.print("Body (blank=none): ");
-            String body = sc.nextLine();
+            // read request body (multi-line) until blank line
+            System.out.println("Enter body (blank line to finish):");
+            StringBuilder bodyBuilder = new StringBuilder();
+            while (true) {
+                String line = sc.nextLine();
+                if (line.isBlank()) break;
+                bodyBuilder.append(line).append("\n");
+            }
+            String body = bodyBuilder.isEmpty() ? null : bodyBuilder.toString();
 
-            // step 5: issue request and dump response
+            // perform the HTTP request
             try {
-                HttpResponse r = client.request(
-                        m, url, hdrs,
-                        body.isBlank() ? null : body // null → no body
-                );
+                HttpResponse response = client.request(method, url, headers, body);
 
-                // Status line
-                System.out.println("Status: " + r.getStatusCode() + " " + r.getStatusMessage());
+                // display status line
+                System.out.println("Response status: " + response.getStatusCode() + " "
+                        + response.getStatusMessage());
 
-                // Headers
-                r.getHeaders().forEach((k, v) -> System.out.println(k + ": " + v));
-                System.out.println();
+                // show response headers
+                System.out.println("Response headers:");
+                response.getHeaders().forEach((k, v) -> System.out.println(k + ": " + v));
 
-                // Body
-                System.out.println(r.getBody());
+                // show response body
+                System.out.println("\nResponse body:");
+                System.out.println(response.getBody());
 
             } catch (Exception e) {
-                e.printStackTrace(); // print stack trace for debugging
+                System.err.println("Request failed: " + e.getMessage());
+                e.printStackTrace();
             }
         }
+        sc.close();
     }
 }

@@ -4,7 +4,7 @@ import java.io.PrintWriter;
 import java.util.HashMap;
 import java.util.Map;
 
-// Basic HTTP/1.1 response assembler that writes directly to a socket PrintWriter.
+// HTTP/1.1 response assembler that writes directly to a socket PrintWriter.
 // No chunked encoding, sends Content-Length and flushes once in send().
 public class SimpleHttpResponseWriter implements HttpResponseWriter {
 

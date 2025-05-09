@@ -20,7 +20,7 @@ public final class ApiKeyConfig {
         String env = System.getenv("API_KEY");
         if (env != null && !env.isBlank()) return env.trim();
 
-        // 3) properties file (best‑effort)
+        // 3) properties file
         try (FileInputStream in = new FileInputStream(PROP_FILE)) {
             Properties p = new Properties();
             p.load(in);

@@ -5,7 +5,6 @@ import java.util.Map;
 
 /*
  * Mutable object representing an HTTP response – status line, headers, and body.
- * Only inline // comments per user request.
  */
 public class HttpResponse {
     private int statusCode;                 // numeric status (e.g. 200)

@@ -7,7 +7,7 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 // Thread‑safe file logger with four levels (INFO, WARN, ERROR, DEBUG).
-// Appends plain‑text lines to server.log – one line per call.
+// Appends plain‑text lines to server.log - one line per call.
 public class Logger {
     private static final String LOG_FILE = "server.log"; // output file
     private static final DateTimeFormatter formatter =

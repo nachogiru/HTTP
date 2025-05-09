@@ -3,7 +3,6 @@ package main.java.com.httpserver;
 import java.util.Map;
 
 // Object representing an incoming HTTP request (method, path, headers, body).
-// Mutability is fine here because the server will populate this object once per request.
 public class HttpRequest {
     private String method;                        // HTTP verb (GET, POST, ...)
     private String path;                          // requested path, e.g. "/users/42"
